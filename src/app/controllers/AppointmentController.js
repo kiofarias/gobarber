@@ -1,9 +1,40 @@
 import * as Yup from 'yup';
-import { parseISO, startOfHour } from 'date-fns';
+import { parseISO, startOfHour, isBefore } from 'date-fns';
 import Appointment from '../models/Appointment';
 import User from '../models/User';
+import File from '../models/File';
 
 class AppointmentController {
+  async index(req, res) {
+    const appointments = await Appointment.findAll({
+      where: {
+        user_id: req.UserId,
+        canceled_at: null,
+      },
+      order: ['date'],
+      attributes: ['date', 'provider_id'],
+      include: [
+        {
+          model: User,
+          as: 'provider',
+          attributes: ['name', 'email'],
+          include: {
+            model: File,
+            as: 'avatar',
+            attributes: ['path', 'url'],
+          },
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name', 'email'],
+        },
+      ],
+    });
+
+    return res.json(appointments);
+  }
+
   async store(req, res) {
     const schema = Yup.object().shape({
       provider_id: Yup.number().required(),
@@ -11,7 +42,7 @@ class AppointmentController {
     });
 
     if (!(await schema.isValid(req.body))) {
-      res.status(400).json({ error: 'Validation fails' });
+      return res.status(400).json({ error: 'Validation fails' });
     }
 
     const { provider_id, date } = req.body;
@@ -21,7 +52,7 @@ class AppointmentController {
     });
 
     if (!isProvider) {
-      res
+      return res
         .status(401)
         .json({ error: 'You can only create appointments with providers' });
     }
@@ -29,8 +60,8 @@ class AppointmentController {
     Check if start time is a possible appointment
      */
     const startHour = startOfHour(parseISO(date));
-    if (startHour < new Date()) {
-      res.status(400).json({ error: 'Past dates are not permitted' });
+    if (isBefore(startHour, new Date())) {
+      return res.status(400).json({ error: 'Past dates are not permitted' });
     }
     /* 
     Check if start time is a possible appointment to that provider in database
@@ -44,7 +75,7 @@ class AppointmentController {
     });
 
     if (checkAvaliability) {
-      res
+      return res
         .status(400)
         .json({ error: 'Appointment hour at date is not available' });
     }
@@ -54,7 +85,7 @@ class AppointmentController {
       provider_id,
       date: startHour,
     });
-    res.json(appointment);
+    return res.json(appointment);
   }
 }
 
