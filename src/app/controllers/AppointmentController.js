@@ -1,8 +1,9 @@
 import * as Yup from 'yup';
-import { parseISO, startOfHour, isBefore } from 'date-fns';
+import { parseISO, startOfHour, isBefore, format } from 'date-fns';
 import Appointment from '../models/Appointment';
 import User from '../models/User';
 import File from '../models/File';
+import Notification from '../schemas/Notification';
 
 class AppointmentController {
   async index(req, res) {
@@ -79,6 +80,18 @@ class AppointmentController {
         .status(400)
         .json({ error: 'Appointment hour at date is not available' });
     }
+    /* 
+    Notify appointment provider
+    */
+
+    const user = await User.findByPk(req.UserId);
+
+    const formatedDate = format(startHour, "dd MMMM 'at' HH:mm aa");
+
+    await Notification.create({
+      content: `New appointment of ${user.name} on the ${formatedDate}`,
+      user: provider_id,
+    });
 
     const appointment = await Appointment.create({
       user_id: req.UserId,
