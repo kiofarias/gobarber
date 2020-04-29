@@ -46,6 +46,15 @@ class AppointmentController {
       return res.status(400).json({ error: 'Validation fails' });
     }
 
+    /* 
+    Verify that the user who made the appointment was a provider
+    */
+    const userIsProvider = await User.findByPk(req.UserId);
+
+    if (userIsProvider.provider) {
+      return res.status(401).json({ error: 'Provider cannot do appointments' });
+    }
+
     const { provider_id, date } = req.body;
 
     const isProvider = await User.findOne({
