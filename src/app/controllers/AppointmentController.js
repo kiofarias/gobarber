@@ -49,13 +49,15 @@ class AppointmentController {
     /* 
     Verify that the user who made the appointment was a provider
     */
-    const userIsProvider = await User.findByPk(req.UserId);
-
-    if (userIsProvider.provider) {
-      return res.status(401).json({ error: 'Provider cannot do appointments' });
-    }
+    const userEqualProvider = await User.findByPk(req.UserId);
 
     const { provider_id, date } = req.body;
+
+    if (userEqualProvider.id === provider_id) {
+      return res
+        .status(401)
+        .json({ error: 'Providers cannot do appointments with yourselves' });
+    }
 
     const isProvider = await User.findOne({
       where: { id: provider_id, provider: true },
