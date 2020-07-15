@@ -14,9 +14,9 @@ class AppointmentController {
     const appointments = await Appointment.findAll({
       where: { user_id: req.UserId, canceled_at: null },
       order: ['date'],
-      attributes: ['id', 'date'],
-      limit: 2,
-      offset: (page - 1) * 2,
+      attributes: ['id', 'date', 'past', 'cancelable'],
+      limit: 10,
+      offset: (page - 1) * 10,
       include: [
         {
           model: User,
